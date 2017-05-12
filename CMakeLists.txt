@@ -22,3 +22,4 @@ target_link_libraries( SMA_headset_V1 ${WIRINGPI_LIBRARIES} )
 target_link_libraries( SMA_headset_V1 ${CMAKE_THREAD_LIBS_INIT} )
 target_link_libraries( SMA_headset_V1 lib )
 
+

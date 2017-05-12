@@ -5,6 +5,7 @@ class SMA
 {
 public:
     SMA();
+int bla;
 };
 
 #endif // SMA_H
