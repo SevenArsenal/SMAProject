@@ -17,8 +17,8 @@ void Camera::InternalThreadEntry()
             qDebug() << "thread is on CAMERA_STOP";
             isRunning = false;
 
-            CamLeft.release();
-            CamRight.release();
+            //CamLeft.release();
+            //CamRight.release();
 
             cv::destroyAllWindows();
             break;
@@ -47,7 +47,7 @@ void Camera::InternalThreadEntry()
         case CAMERA_DISPARITY:
         //qDebug() << "thread is on CAMERA_DISPARITY";
             getDisparity();
-            delayMicroseconds(1000) ;
+            //delayMicroseconds(1000) ;
             break;
 
         }
@@ -111,20 +111,20 @@ int Camera::InitCamera()
     double dWidthR = CamRight.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
     double dHeightR = CamRight.get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video
     double fpsR = CamRight.get(CV_CAP_PROP_FPS); //get the fps of the video
-    double BUFR = CamRight.get(CV_CAP_PROP_BUFFERSIZE); //get the buf of the video
+    //double BUFR = CamRight.get(CV_CAP_PROP_BUFFERSIZE); //get the buf of the video
 
     qDebug() << "CamRight :"<< endl <<" - Frame size : " << dWidthR << " x " << dHeightR;
     qDebug() <<" - FPS : " << fpsR;
-    qDebug() <<" - Buffersize : " << BUFR << endl;
+    //qDebug() <<" - Buffersize : " << BUFR << endl;
 
     double dWidthL = CamLeft.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
     double dHeightL = CamLeft.get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the video
     double fpsL = CamLeft.get(CV_CAP_PROP_FPS); //get the fps of the video
-    double BUFL = CamRight.get(CV_CAP_PROP_BUFFERSIZE); //get the buf of the video
+    //double BUFL = CamRight.get(CV_CAP_PROP_BUFFERSIZE); //get the buf of the video
 
     qDebug() << "CamLeft :"<< endl <<" - Frame size : " << dWidthL << " x " << dHeightL;
     qDebug() <<" - FPS : " << fpsL;
-    qDebug() <<" - Buffersize : " << BUFL << endl;
+    //qDebug() <<" - Buffersize : " << BUFL << endl;
 
 
     isCameraInit = true;
@@ -150,10 +150,12 @@ int Camera::StartCamera()
      if (!bSuccessL&&!bSuccessR) //if not success, break loop
     {
          qDebug() << "Cannot read a frame from video stream" << endl;
-    }
+    }else
+     {
+         if(IS_IMSHOW_ENABLE)cv::imshow("Left", frameL); //show the frame in "MyVideo" window
+         if(IS_IMSHOW_ENABLE)cv::imshow("Right", frameR); //show the frame in "MyVideo" window
+     }
 
-    if(IS_IMSHOW_ENABLE)cv::imshow("Left", frameL); //show the frame in "MyVideo" window
-    if(IS_IMSHOW_ENABLE)cv::imshow("Right", frameR); //show the frame in "MyVideo" window
 
     qDebug() << "StartCamera End";
 
@@ -211,10 +213,12 @@ void Camera::StopRUN()
     Camera_run = CAMERA_STOP;
     Camera_run_mutex.unlock();
     WaitForInternalThreadToExit();
+
 }
 
 int Camera::getDisparity()
 {
+    QString ToSend = "";
 
       //-- 1. Read the images
     cv::Mat frameL;
@@ -240,9 +244,11 @@ int Camera::getDisparity()
 
     cvtColor(frameL,imgLeft,CV_BGR2GRAY);
     cvtColor(frameR,imgRight,CV_BGR2GRAY);
-    if(0){
+    if(1){
         if(IS_IMSHOW_ENABLE)cv::imshow("Left", imgLeft);
         if(IS_IMSHOW_ENABLE)cv::imshow("Right", imgRight);
+        if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/Left-"__DATE__" "__TIME__".jpg", imgLeft);
+        if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/Right-"__DATE__" "__TIME__".jpg", imgRight);
     }
 
     //-- And create the image in which we will save our disparities
@@ -258,15 +264,19 @@ int Camera::getDisparity()
     //-- 2. Call the constructor for StereoBM
     //int ndisparities = 16*5;   /**< Range of disparity */
     //int SADWindowSize = 21; /**< Size of the block window. Must be odd */
-//    int ndisparities = 16*5;   /**< Range of disparity */
-//    int SADWindowSize = 41; /**< Size of the block window. Must be odd */
-    int ndisparities = 16*5;   /**< Range of disparity */
-    int SADWindowSize = 61; /**< Size of the block window. Must be odd */
+    //int ndisparities = 16*5;   /**< Range of disparity */
+    //int SADWindowSize = 41; /**< Size of the block window. Must be odd */
+    //int ndisparities = 16*5;   /**< Range of disparity */
+    //int SADWindowSize = 61; /**< Size of the block window. Must be odd */
+    int ndisparities = 16*3;   /**< Range of disparity */
+    int SADWindowSize = 51; /**< Size of the block window. Must be odd */
 
     Ptr<StereoBM> sbm = StereoBM::create( ndisparities, SADWindowSize );
-
     //-- 3. Calculate the disparity image
+
+        Timer.start();
     sbm->compute( imgLeft, imgRight, imgDisparity16S );
+        qDebug() << "Compute take " << Timer.elapsed() << "ms";
 
     //-- Check its extreme values
 
@@ -294,22 +304,32 @@ int Camera::getDisparity()
 
     imgDisparity16S(CropTot).copyTo(CropImage);
 
-    QString ToSend = "";
 
-    ToSend = "Min Disp "+QString::number(minVal)+" Max Disp "+QString::number(maxVal)+"\n";
-    ToSend.append("Min x "+QString::number(min.x)+"y "+QString::number(min.y)+"\n");
-    ToSend.append("Max x "+QString::number(max.x)+"y "+QString::number(max.y)+"\n");
+    //ToSend = "Min Disp "+QString::number(minVal)+" Max Disp "+QString::number(maxVal)+"\n";
+    //ToSend.append("Min x "+QString::number(min.x)+"y "+QString::number(min.y)+"\n");
+    //ToSend.append("Max x "+QString::number(max.x)+"y "+QString::number(max.y)+"\n");
     //ToSend.append("Size height "+QString::number(imgDisparity16S.size().height)+" width "+QString::number(imgDisparity16S.size().width)+"\n");
     //ToSend.append("CropImage height "+QString::number(CropImage.size().height)+" width "+QString::number(CropImage.size().width)+"\n");
-
-
     //emit SendText(ToSend,QColor(0,200,200));
 
     //-- 4. Display it as a CV_8UC1 image
     //imgDisparity16S.convertTo( imgDisparity8U, CV_8UC1, 255/(maxVal - minVal));
     //if(IS_IMSHOW_ENABLE)cv::imshow( "Disparity", imgDisparity8U );
+
     CropImage.convertTo( imgDisparity8U, CV_8UC1, 255/(MaxValue - minVal));
-    if(IS_IMSHOW_ENABLE)cv::imshow( "CropImage", imgDisparity8U );
+    //CropImage.convertTo( imgDisparity8U, CV_8UC1, 255/(DISPARITY_MAX - minVal));
+    if(IS_IMSHOW_ENABLE){
+        for(int i=0;i<4;i++)
+            line(imgDisparity8U,
+                 Point(i*imgDisparity8U.size().width/4,0),
+                 Point(i*imgDisparity8U.size().width/4 ,
+                 imgDisparity8U.size().height),
+                 Scalar(255,250,250)
+                 );
+        cv::imshow( "CropImage", imgDisparity8U );
+    }
+    if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/CropImage-"__DATE__" "__TIME__".jpg", imgDisparity8U);
+    if(IS_VIDEOWRITE_ENABLE)SaveDisparity.write(imgDisparity8U);
 
     //-- 5. Find 4 Max
 
@@ -320,13 +340,16 @@ int Camera::getDisparity()
 
         double minValQuart; double maxValQuart;
 
-        cv::Mat CropImageQuart = CropImage(Rect(i*CropImage.size().width/4,0,CropImage.size().width/4,CropImage.size().height));
+        cv::Mat CropImageQuart = CropImage(Rect(i*CropImage.size().width/4 ,
+                                                0 ,
+                                                CropImage.size().width/4,
+                                                CropImage.size().height));
 
         minMaxLoc( CropImageQuart, &minValQuart, &maxValQuart);
 
         Distance[i] = maxValQuart / MaxValue;
 
-        ToSend.append("Quart " +QString::number(i+1)+"/4 Max = "+QString::number(Distance[i])+"\n");
+        ToSend.append("" +QString::number(i+1)+"/4 = "+QString::number(Distance[i])+"\n");
 
         //qDebug() << "Quart " << i+1 << "/4 Max = " << Distance[i];
     }
@@ -351,6 +374,18 @@ int Camera::getDisparity(bool loop)
 
     if(loop){
         StopRUN();
+
+        if(IS_VIDEOWRITE_ENABLE){
+            Size S = Size(640,480);// Magic number ^^
+
+            SaveDisparity.open("/home/pi/Desktop/CropImage-"__DATE__" "__TIME__".avi",CV_FOURCC('W','M','V','1'),FPS_VIDEO,S,false);//CV_FOURCC('M','J','P','G') CV_FOURCC('P','I','M','1')
+
+            if(!SaveDisparity.isOpened())
+            {
+                qDebug() << "Could not open Video";
+                return -1;
+            }
+        }
         Camera_run_mutex.lock();
         Camera_run = CAMERA_DISPARITY;
         Camera_run_mutex.unlock();

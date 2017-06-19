@@ -50,17 +50,17 @@ int SMA_controller::set(SMA_Channel _Channel, unsigned int _Pin, unsigned int _V
 
     if(_Channel != SMA_CHANNEL_A && _Channel != SMA_CHANNEL_D)
         return -1;
-    if(_Pin < 1 || _Pin > 8)
+    if( _Pin > 7)
         return -1;
     if(_Value > 1)
         return -1;
 
     if(_Channel == SMA_CHANNEL_A)
     {
-        Gpio_pin = _Pin-1;
+        Gpio_pin = _Pin;
     }else if(_Channel == SMA_CHANNEL_D)
     {
-        Gpio_pin = _Pin + 7;
+        Gpio_pin = _Pin + 8;
     }
 
     if(Gpio_pin > 6)

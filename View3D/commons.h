@@ -3,8 +3,8 @@
 
 
 #define SPI_SPEED 500000 	// from 500 000 Hz to 32 Mhz
-#define SPI_Channel_ADC 1 	// CE1
-#define SPI_Channel_DAC 0 	// CE0
+#define SPI_Channel_ADC 0 	// CE0
+#define SPI_Channel_DAC 1 	// CE1
 
 //#define DAC_CHANNEL_A 0 	// Vout A
 //#define DAC_CHANNEL_D 1 	// Vout B
@@ -30,7 +30,11 @@
 
 #define DISPARITY_MAX 1200
 
-#define IS_IMSHOW_ENABLE true
+#define IS_IMSHOW_ENABLE false
+#define IS_IMWRITE_ENABLE false
+#define IS_VIDEOWRITE_ENABLE 1
+
+#define FPS_VIDEO 3
 
 
 

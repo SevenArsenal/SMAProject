@@ -1,6 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+//#include "tbb/tbb.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -13,6 +15,7 @@
 #include <QDebug>
 #include <QMutex>
 #include <QColor>
+#include <QElapsedTimer>
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/calib3d.hpp"
@@ -22,6 +25,7 @@
 
 #include <iostream>
 
+//using namespace tbb;
 using namespace cv;
 
 typedef enum {CAMERA_VIDEO,CAMERA_DISPARITY,CAMERA_STOP}Camera_Run_t;
@@ -46,6 +50,12 @@ private:
     double Distance[4];
 
     int MaxValue;
+
+    VideoWriter SaveDisparity;
+
+    QElapsedTimer Timer;
+
+
 
 public:
     explicit Camera(QObject *parent = 0);

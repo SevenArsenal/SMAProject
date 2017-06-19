@@ -33,6 +33,9 @@ void SMA_Headset::InternalThreadEntry()
             //printf("TimeHigh is %d us\n",TimeHigh);
             //printf("TimeLow is %d us\n",TimeLow);
 
+
+            this->SetCurrent(MaxCurrent);
+
             int i = 0;
 
             while ((i<(int)TemSignal.DuringTime*1000) && isRunning)
@@ -48,6 +51,8 @@ void SMA_Headset::InternalThreadEntry()
                     if(ret != 0)
                         printf("ERROR on SET thread\n");
                   }
+
+            this->SetCurrent(0);
         }
 
         piLock(0);
@@ -83,8 +88,10 @@ double SMA_Headset::getCurrentCoef() const
 
 SMA_Headset::~SMA_Headset()
 {
+    printf("Close Headset thread\n");
     StopRUN();
 
+    printf("Close SMA \n");
     for(int i=0;i<NB_SMA_PER_HEADSET;i++)
     {
         MySMA_controller.set(mysma[i],0);
@@ -199,10 +206,14 @@ double SMA_Headset::get_Current(sma _sma)
 }
 void SMA_Headset::checkADC()
 {
+
+    ADC.init();
+
     printf("ADC channel check\n");
     for(int i = 0;i<8;i++)
     {
-        printf(" -channel %d => %5.1d\n",i,ADC.get_raw((ADC_Channel)i));
+        //printf(" -channel %d => %5.1d\n",i,ADC.get_raw((ADC_Channel)i));
+        qDebug() << " -channel "<< (ADC_Channel)i <<" => "<<ADC.get_raw((ADC_Channel)i);
     }
 }
 // return true is SMA headset is ok
@@ -281,11 +292,11 @@ const char *SMA_Headset::isOKstring()
         delay(100);
     }
 
-    if(Nb_SMA == 3)
+    if(Nb_SMA == NB_SMA_PER_HEADSET)
     {
         IsOK = true;
     }
-    sprintf(retstring,"%sThis SMA_headset is %s (%d/%d)\n\n",retstring,IsOK? "OK":"not OK",Nb_SMA,NB_SMA_PER_HEADSET);
+    sprintf(retstring,"%sThis SMA_headset is %s (%d/%d)\n",retstring,IsOK? "OK":"not OK",Nb_SMA,NB_SMA_PER_HEADSET);
 
     SetCurrent(0);
 
@@ -294,6 +305,10 @@ const char *SMA_Headset::isOKstring()
 
 int SMA_Headset::StartRUN()
 {
+
+    if(isRunning)
+        return -1;
+
     isRunning = false;
 /*
     if(!IsOK){
@@ -318,6 +333,8 @@ int SMA_Headset::StartRUN()
 
 void SMA_Headset::StopRUN()
 {
+    if(!isRunning)
+    return;
     isRunning = false;
     WaitForInternalThreadToExit();
 }
@@ -369,10 +386,21 @@ int SMA_Headset::SetCurrent(int _Current)
     return ret;
 }
 
+int SMA_Headset::SetMAXCurrent(int _Current)
+{
+    if(_Current<0||_Current>2000)
+        return -1;
+
+    MaxCurrent = _Current;
+    return 0;
+
+}
+
 int SMA_Headset::CalibCurrent()
 {
     // the aim is to find the value of CurrentCoef
     // But not enable now
+    // Use TestCurrent instead and try to get return error close to 0
     return -1;
 }
 
@@ -390,7 +418,7 @@ double SMA_Headset::TestCurrent(unsigned int _sma,double _Current)
 
     ret += DAC.DAC_set(mysma[_sma].Channel,DAC_Current);    // Turn on DAC
 
-    ret += MySMA_controller.set(mysma[_sma],1);             // Turn in SMA
+    ret += MySMA_controller.set(mysma[_sma],1);             // Turn on SMA
 
     double RealCurrent = get_Current(mysma[_sma]);          // Get ADC
 

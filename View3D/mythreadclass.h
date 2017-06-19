@@ -10,6 +10,10 @@ public:
    /** Returns true if the thread was successfully started, false if there was an error starting the thread */
    bool StartInternalThread()
    {
+       //struct sched_param mysched_param;
+       //memset(&mysched_param,0,sizeof(mysched_param));
+       //mysched_param.sched_priority = 50;
+       //pthread_setschedparam(_thread,SCHED_FIFO,&mysched_param);
       return (pthread_create(&_thread, NULL, InternalThreadEntryFunc, this) == 0);
    }
 

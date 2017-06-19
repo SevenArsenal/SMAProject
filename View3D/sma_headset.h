@@ -15,7 +15,7 @@
 #include <mythreadclass.h>
 
 
-class SMA_Headset : public MyThreadClass
+class SMA_Headset : private MyThreadClass
 {
 private:
 
@@ -58,6 +58,7 @@ public:
     double get_Current(sma _sma);
     int SetSignal(Signal_t _MySignal);
     int SetCurrent(int _Current);
+    int SetMAXCurrent(int _Current);
     int CalibCurrent();
     double TestCurrent(unsigned int _sma, double _Current);
     double getCurrentCoef() const;
