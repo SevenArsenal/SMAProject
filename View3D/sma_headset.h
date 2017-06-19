@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "wiringPi.h"
 
 #include "commons.h"
@@ -13,6 +14,13 @@
 #include "MCP3208.h"
 #include "sma.h"
 #include <mythreadclass.h>
+
+#include <QFile>
+#include <QTextStream>
+#include <QTime>
+#include <QDate>
+#include <QTimer>
+#include <QDebug>
 
 
 class SMA_Headset : private MyThreadClass
@@ -51,6 +59,7 @@ public:
     int set(bool _Value);
 
     int isOK(); // return true is SMA headset is ok
+    int isOK(unsigned int _nbsma); // return true is SMA headset is ok
     const char *isOKstring();
     int StartRUN();
     void StopRUN();
@@ -62,6 +71,8 @@ public:
     int CalibCurrent();
     double TestCurrent(unsigned int _sma, double _Current);
     double getCurrentCoef() const;
+    int CheckCommandADC(Signal_t _Signal);
+    int getMaxCurrent() const;
 };
 
 #endif // SMA_HEADSET_H

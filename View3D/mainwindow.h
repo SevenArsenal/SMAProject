@@ -8,6 +8,7 @@
 #include <QColor>
 #include <QCloseEvent>
 #include <QTimer>
+#include <qmath.h>
 
 #include "commons.h"
 #include "sma_headset.h"
@@ -20,7 +21,6 @@
 #include "camera.h"
 
 #include "oleddisplay.h"
-
 
 
 /*
@@ -50,7 +50,7 @@ public:
 
 public slots:
 private slots:
-    void on_CheckAll_clicked();
+    void CheckAll();
 
     void on_StartWebcam_clicked();
 
@@ -70,11 +70,11 @@ private slots:
 
     void ReturnToTextbox(int _ret);
 
-    void on_CheckCurrent_clicked();
+    void CheckCurrent();
 
-    void RcvDistance(double* _Distance);
+    void RcvDistance(double* _Distance, unsigned int _DuringTime = 400);
 
-    void on_CheckADC_clicked();
+    void CheckADC();
 
     void on_SMA_Current_valueChanged(int arg1);
 
@@ -82,9 +82,17 @@ private slots:
 
     void on_Command_SMA_stateChanged(int arg1);
 
-    void on_CheckSMAcmd_clicked();
+    void CheckSMAcmd();
 
     void on_I2C_clicked();
+
+    void DisplaySmaState();
+
+    void on_I2C_sma_clicked();
+
+    void ADC_sma();
+
+    void SMA_Sinus();
 
 private:
 

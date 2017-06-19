@@ -1,7 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
-//#include "tbb/tbb.h"
+#include "tbb/tbb.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +16,7 @@
 #include <QMutex>
 #include <QColor>
 #include <QElapsedTimer>
+#include <QDateTime>
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/calib3d.hpp"
@@ -55,7 +56,10 @@ private:
 
     QElapsedTimer Timer;
 
+    int ndisparities ;   /**< Range of disparity */
+    int SADWindowSize ; /**< Size of the block window. Must be odd */
 
+    Size CamSize;
 
 public:
     explicit Camera(QObject *parent = 0);

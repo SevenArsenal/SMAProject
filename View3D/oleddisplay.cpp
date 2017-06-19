@@ -5,6 +5,7 @@ OLEDdisplay::OLEDdisplay(QObject *parent) :
 {
     if(!display.init(OLED_I2C_RESET,OLED_ADAFRUIT_I2C_128x64) ){
         qDebug() << "INIT I2C DISPLAY ERROR";
+        return;
     }
 
     display.begin();
@@ -17,6 +18,10 @@ OLEDdisplay::OLEDdisplay(QObject *parent) :
     display.setTextColor(WHITE);
     display.setCursor(0,0);
     line = 0;
+    line_blue = 0;
+    line_yellow = 0;
+
+    isEnable = true;
     //display.setHorizontalScrollProperties(1,0,128,0,64,1);
 
 /*
@@ -32,6 +37,8 @@ OLEDdisplay::OLEDdisplay(QObject *parent) :
 
 void OLEDdisplay::Write(QString _data)
 {
+    if(!isEnable)
+        return;
     _data.append("\n");
 
     QByteArray array = _data.toLocal8Bit();
@@ -54,64 +61,131 @@ void OLEDdisplay::Write(QString _data)
 }
 void OLEDdisplay::Write_blue(QString _data)
 {
-    display.setCursor(0,5*line_blue+16);// Go at the end of the previous text
+    if(!isEnable)
+        return;
+    //display.setCursor(0,CARACTERE_H*line_blue+16);// Go at the end of the previous text
 
     data_blue += _data.toLocal8Bit();
-    line_blue += CountLine(data_blue,data_blue.size());
+    line_blue += CountLine(_data.toLocal8Bit(),_data.size());
 
+    //qDebug() << _data;
+    //qDebug() << "data_blue" << data_blue;
+    //qDebug() << "line_blue = " << line_blue;
 
-   // qDebug() << "line_blue = " << line_blue;
-
-    if(line_blue>5)
+    if(line_blue>BLUE_H)
     {
         display.clearDisplay();
         display.setCursor(0,0);
         display.print(data_yellow.data());// keep the yellow part
         display.setCursor(0,16);
 
+        data_blue.clear();
         data_blue = _data.toLocal8Bit();
         line_blue = CountLine(data_blue,data_blue.size());
     }
 
 
+    display.setCursor(0,16);
     display.print(data_blue.data());
     display.display();
+
+    //qDebug() << "\n\n";
 
 }
 void OLEDdisplay::Write_yellow(QString _data)
 {
-    display.setCursor(0,5*line_yellow);// Go at the end of the previous text
+    if(!isEnable)
+        return;
+    //display.setCursor(0,CARACTERE_H*line_yellow+16);// Go at the end of the previous text
 
     data_yellow += _data.toLocal8Bit();
-    line_yellow += CountLine(data_yellow,data_yellow.size());
+    line_yellow += CountLine(_data.toLocal8Bit(),_data.size());
 
+    //qDebug() << _data;
+    //qDebug() << "data_yellow" << data_yellow;
+    //qDebug() << "line_yellow = " << line_yellow;
 
-    if(line_yellow>2)
+    if(line_yellow>YELLOW_H)
     {
         display.clearDisplay();
         display.setCursor(0,16);
-        display.print(data_blue.data());// keep the blue part
+        display.print(data_blue.data());// keep the yellow part
         display.setCursor(0,0);
 
+        data_yellow.clear();
         data_yellow = _data.toLocal8Bit();
         line_yellow = CountLine(data_yellow,data_yellow.size());
     }
 
+
+    display.setCursor(0,0);
     display.print(data_yellow.data());
     display.display();
 
+    //qDebug() << "\n\n";
+
+}
+
+void OLEDdisplay::clear()
+{
+    clear_yellow();
+    clear_blue();
+}
+
+void OLEDdisplay::clear_blue()
+{
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.print(data_yellow.data());// keep the yellow part
+    display.setCursor(0,16);
+
+    data_blue.clear();
+    line_blue = 0;
+
+}
+
+void OLEDdisplay::clear_yellow()
+{
+    display.clearDisplay();
+    display.setCursor(0,16);
+    display.print(data_blue.data());// keep the blue part
+    display.setCursor(0,0);
+
+    data_yellow.clear();
+    line_yellow = 0;
 }
 
 void OLEDdisplay::kill()
 {
+
+    isEnable = false;
+
     display.clearDisplay();   // clears the screen  buffer
     display.display();   		// display it (clear display)
+    display.fillRect(0,0,display.width(),display.height(),WHITE);
     display.setCursor(0,0);
     display.setTextColor(BLACK, WHITE); // 'inverted' text
     display.setTextSize(4);
-    display.printf(" DEAD *_*   ");
+    display.printf(" END  *_*   ");
     display.startscrollright(0x00, 0x0F);
     display.display();
+}
+
+void OLEDdisplay::Headset(int _Headset, int _SMA[])
+{
+
+    QString Tosend = "H"+QString::number(_Headset)+" ";
+    for(int i=0;i<3;i++){
+
+        Tosend.append("S" +QString::number(i)+":");
+        if(_SMA[i]){
+            Tosend.append("X ");
+        }else{
+            Tosend.append("O ");
+        }
+    }
+    Tosend.append("\n");
+    Write_blue(Tosend);
 }
 unsigned int OLEDdisplay::CountLine(QByteArray buff,int sz)
 {
@@ -132,6 +206,8 @@ unsigned int OLEDdisplay::CountLine(QByteArray buff,int sz)
             }
         }
     }
+
+    //qDebug() << "newlines" << newlines;
 
     return newlines;
 }

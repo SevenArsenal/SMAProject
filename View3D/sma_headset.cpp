@@ -1,5 +1,10 @@
 #include "sma_headset.h"
 
+
+int SMA_Headset::getMaxCurrent() const
+{
+    return MaxCurrent;
+}
 void SMA_Headset::InternalThreadEntry()
 {
     while(isRunning)
@@ -15,7 +20,7 @@ void SMA_Headset::InternalThreadEntry()
         //printf("Run thread (%d) Alive !\n",this->mysma[0].Pin);
         //printf("Run thread (%d) Alive !\n",pthread_self());
 
-        if(TemSignal.Frequency!=0)
+        if(TemSignal.Frequency!=0 && TemSignal.DuringTime!=0 && TemSignal.DutyCycle!=0 )
         {
 
             int ret =0;
@@ -29,9 +34,10 @@ void SMA_Headset::InternalThreadEntry()
             TimeHigh = int( (Periode*TemSignal.DutyCycle*1.0/100) +0.5 );
             TimeLow = Periode - TimeHigh;
 
-            //printf("Periode is %d us\n",Periode);
-            //printf("TimeHigh is %d us\n",TimeHigh);
-            //printf("TimeLow is %d us\n",TimeLow);
+            printf("Periode is %d us\n",Periode);
+            printf("TimeHigh is %d us\n",TimeHigh);
+            printf("TimeLow is %d us\n",TimeLow);
+            printf("MaxCurrent is %d us\n\n",MaxCurrent);
 
 
             this->SetCurrent(MaxCurrent);
@@ -41,6 +47,7 @@ void SMA_Headset::InternalThreadEntry()
             while ((i<(int)TemSignal.DuringTime*1000) && isRunning)
                   {
                 //printf("All SMA on\n");
+
                     ret += this->set(1);
                     delayMicroseconds(TimeHigh) ;
                 //printf("All SMA off\n");
@@ -53,21 +60,21 @@ void SMA_Headset::InternalThreadEntry()
                   }
 
             this->SetCurrent(0);
+
+            piLock(0);
+
+            MySignal.DuringTime = 0;
+            MySignal.DutyCycle  = 0;
+            MySignal.Frequency  = 0;
+
+            piUnlock(0);
+
+        }else{
+            delay(1); // ms
         }
-
-        piLock(0);
-
-        MySignal.DuringTime = 0;
-        MySignal.DutyCycle  = 0;
-        MySignal.Frequency  = 0;
-
-        piUnlock(0);
-
 
         this->set(0);
 
-
-       delay(1);
     }
 
     piLock(0);
@@ -86,6 +93,88 @@ double SMA_Headset::getCurrentCoef() const
     return CurrentCoef;
 }
 
+int SMA_Headset::CheckCommandADC(Signal_t _Signal)
+{
+
+    unsigned int i          = 0;
+    unsigned int Periode    = 0;
+    unsigned int TimeHigh   = 0;
+    unsigned int TimeLow    = 0;
+
+    unsigned int SampleTime = 500;//(us)
+    unsigned int ADCTime    = 260;//(us) // MAGIC ! //Time Take by ADC to get value With 500ms signal => 260us
+
+    Periode = int(1*1000000/_Signal.Frequency); // 0.92
+    TimeHigh = int( (Periode*_Signal.DutyCycle*1.0/100) +0.5 );
+    TimeLow = Periode - TimeHigh;
+
+    // Timer
+
+    QTime TimeStamp;
+
+
+    // Initiate Logger
+
+    qDebug() << "Open logger at" << QDateTime::currentDateTime().toString();
+
+    QFile Logger("ADC measure/ADC_Command_"+QDateTime::currentDateTime().toString()+".csv" );
+
+    if(!Logger.open(QFile::WriteOnly|QFile::Truncate))
+        return -1;
+
+    QTextStream Stream(&Logger);
+
+    // infill Data
+
+    Stream <<"\t\t\t\t"<< "ADC mesure at \t" << QDateTime::currentDateTime().toString() <<"\n";
+    Stream <<"\t\t\t\t"<< "With Signal\t"   <<"DuringTime\t"   << _Signal.DuringTime    <<"\t"<<"ms\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"DutyCycle\t"    << _Signal.DutyCycle     <<"\t"<<"% \t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"Frequency\t"    << _Signal.Frequency     <<"\t"<<"Hz\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"Periode\t"      << Periode               <<"\t"<<"us\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"TimeHigh\t"     << TimeHigh              <<"\t"<<"us\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"TimeLow\t"      << TimeLow               <<"\t"<<"us\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"SampleTime\t"   << SampleTime            <<"\t"<<"us\t"        <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"CurrentMax\t"   << MaxCurrent            <<"\t"<<"mA\t"        <<"\n";
+    Stream <<"\t\t\t\t"<< "With SMA\t"      <<"Channel\t"      << (int)mysma[0].Channel <<"\t"                <<"\n";
+    Stream <<"\t\t\t\t"<<            "\t"   <<"Pin\t"          << mysma[0].Pin          <<"\t"                <<"\n";
+
+    //Start Measure
+
+    Stream << "Time (ms)\t"     << "Current (mA)\t" << "SMA State (0n/Off)\t" <<"\n";
+
+    this->SetCurrent(MaxCurrent); // Set current
+    TimeStamp.start();
+
+    while ((i<_Signal.DuringTime*1000))
+          {
+
+            MySMA_controller.set(mysma[0],1); // Start one SMA
+
+            for(int j =0 ;((j*SampleTime)<TimeHigh);j++)
+            {
+                Stream << TimeStamp.elapsed() <<"\t"<< this->get_Current(mysma[0]) <<"\t"<<1<< "\n"; // Get Value
+                delayMicroseconds(SampleTime-ADCTime);                                              // Wait until 2 samples
+            }
+
+            MySMA_controller.set(mysma[0],0); // Stop one SMA
+            for(int j =0 ;((j*SampleTime)<TimeLow);j++)
+            {
+                Stream << TimeStamp.elapsed() <<"\t"<< this->get_Current(mysma[0]) <<"\t"<<0<< "\n"; // Get Value
+                delayMicroseconds(SampleTime-ADCTime);                                              // Wait until 2 samples
+            }
+
+            i+=TimeHigh+TimeLow; // Time Taken for one On/Off
+          }
+
+    qDebug() << "Close logger at" << QTime::currentTime().toString() << "TimeStamp.elapsed() =" << TimeStamp.elapsed() << "ms";
+
+    this->set(0);       // Set SMA off
+    this->SetCurrent(0); // Set Current off
+    Logger.close();
+
+    return 0;
+}
+
 SMA_Headset::~SMA_Headset()
 {
     printf("Close Headset thread\n");
@@ -102,6 +191,7 @@ SMA_Headset::SMA_Headset()
 {
     isInit = 0;
     CurrentCoef = CURRENT_COEF;
+    isRunning = false;
 }
 
 SMA_Headset::SMA_Headset(sma _sma1, sma _sma2, sma _sma3)
@@ -118,6 +208,8 @@ SMA_Headset::SMA_Headset(sma _sma1, sma _sma2, sma _sma3)
 
 int SMA_Headset::init()
 {
+
+    StopRUN();
 
     piLock(0);
 
@@ -206,7 +298,6 @@ double SMA_Headset::get_Current(sma _sma)
 }
 void SMA_Headset::checkADC()
 {
-
     ADC.init();
 
     printf("ADC channel check\n");
@@ -257,6 +348,37 @@ int SMA_Headset::isOK() // return true is SMA headset is ok
     SetCurrent(0);
 
     return IsOK;
+}
+
+int SMA_Headset::isOK(unsigned int _nbsma)
+{
+    if (!isInit)
+        return -1;
+    if(_nbsma > NB_SMA_PER_HEADSET)
+        return -1;
+
+    SetCurrent(500);                        //Start DAC
+
+    MySMA_controller.set(mysma[_nbsma],1); // Start SMA
+
+    int ADC_raw = ADC.get_raw(ADC.SMA_to_ADC(mysma[_nbsma].Channel)); // Mesure Current
+
+    MySMA_controller.set(mysma[_nbsma],0); // Stop SMA
+
+    SetCurrent(0);                          //Stop DAC
+
+    double ADC_Value = ADC.Raw_to_Current(ADC_raw,mysma[_nbsma].Channel); // Convert Current
+
+    if(ADC_Value*1000 >SMA_THRESHOLD)
+    {
+        mysma[_nbsma].IsOK = true;
+    }else
+    {
+        mysma[_nbsma].IsOK = false;
+    }
+    delay(100);
+
+    return mysma[_nbsma].IsOK ;
 }
 
 const char *SMA_Headset::isOKstring()
@@ -334,14 +456,13 @@ int SMA_Headset::StartRUN()
 void SMA_Headset::StopRUN()
 {
     if(!isRunning)
-    return;
+        return;
     isRunning = false;
     WaitForInternalThreadToExit();
 }
 
 int SMA_Headset::SetSignal(Signal_t _MySignal)
 {
-
 
     if(_MySignal.Frequency<=500 && _MySignal.Frequency >=10)
     {
@@ -366,11 +487,12 @@ int SMA_Headset::SetSignal(Signal_t _MySignal)
     MySignal = _MySignal;
 
     piUnlock(0);
-/*
-    printf("MySignal.DuringTime     is %d us\n",MySignal.DuringTime);
-    printf("MySignal.DutyCycle      is %d us\n",MySignal.DutyCycle);
-    printf("MySignal.Frequency      is %d us\n",MySignal.Frequency);
-*/
+
+    //printf("MySignal.DuringTime     is %d ms\n",MySignal.DuringTime);
+    //printf("MySignal.DutyCycle      is %d %\n",MySignal.DutyCycle);
+    //printf("MySignal.Frequency      is %d Hz\n",MySignal.Frequency);
+    //printf("MaxCurrent              is %d mA\n\n",MaxCurrent);
+
     return 0;
 }
 

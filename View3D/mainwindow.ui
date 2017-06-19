@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>808</width>
-    <height>607</height>
+    <width>805</width>
+    <height>719</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -36,7 +36,7 @@
     <item>
      <widget class="QTextBrowser" name="textBrowser">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -62,7 +62,7 @@ color: rgb(8, 245, 25);</string>
         </property>
         <property name="minimumSize">
          <size>
-          <width>145</width>
+          <width>140</width>
           <height>200</height>
          </size>
         </property>
@@ -78,7 +78,7 @@ border-radius: 3px;</string>
           <rect>
            <x>10</x>
            <y>30</y>
-           <width>120</width>
+           <width>121</width>
            <height>31</height>
           </rect>
          </property>
@@ -86,40 +86,11 @@ border-radius: 3px;</string>
           <string>CheckAll</string>
          </property>
         </widget>
-        <widget class="QPushButton" name="CheckCurrent">
-         <property name="geometry">
-          <rect>
-           <x>40</x>
-           <y>70</y>
-           <width>91</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>CheckCurrent</string>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="CheckADC">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="geometry">
-          <rect>
-           <x>40</x>
-           <y>70</y>
-           <width>91</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>CheckADC</string>
-         </property>
-        </widget>
         <widget class="QSpinBox" name="SMA_Current">
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>150</y>
+           <y>100</y>
            <width>81</width>
            <height>31</height>
           </rect>
@@ -138,9 +109,9 @@ border-radius: 3px;</string>
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>110</y>
+           <y>70</y>
            <width>121</width>
-           <height>71</height>
+           <height>61</height>
           </rect>
          </property>
          <property name="text">
@@ -154,7 +125,7 @@ border-radius: 3px;</string>
          <property name="geometry">
           <rect>
            <x>90</x>
-           <y>150</y>
+           <y>110</y>
            <width>35</width>
            <height>21</height>
           </rect>
@@ -166,26 +137,10 @@ border-radius: 3px;</string>
           <string>mA</string>
          </property>
         </widget>
-        <widget class="QPushButton" name="CheckSMAcmd">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>70</y>
-           <width>120</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>CheckSMAcmd</string>
-         </property>
-        </widget>
         <zorder>label</zorder>
         <zorder>CheckAll</zorder>
-        <zorder>CheckADC</zorder>
-        <zorder>CheckCurrent</zorder>
         <zorder>SMA_Current</zorder>
         <zorder>label_2</zorder>
-        <zorder>CheckSMAcmd</zorder>
        </widget>
       </item>
       <item>
@@ -440,6 +395,32 @@ border-radius: 3px;</string>
           <string>I2C</string>
          </property>
         </widget>
+        <widget class="QPushButton" name="I2C_sma">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>110</y>
+           <width>51</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>sma</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="ADC">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>150</y>
+           <width>51</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ADC</string>
+         </property>
+        </widget>
        </widget>
       </item>
       <item>
@@ -517,7 +498,7 @@ border: none;</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>808</width>
+     <width>805</width>
      <height>27</height>
     </rect>
    </property>
@@ -525,8 +506,20 @@ border: none;</string>
     <property name="title">
      <string>View 3D sma</string>
     </property>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuCheck">
+    <property name="title">
+     <string>Check</string>
+    </property>
+    <addaction name="actionADC_Command"/>
+    <addaction name="actionCurrent_Calibration"/>
+    <addaction name="actionCommand_SMA"/>
+    <addaction name="actionAll_SMA"/>
+    <addaction name="actionSinus"/>
    </widget>
    <addaction name="menuView_3D_sma"/>
+   <addaction name="menuCheck"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QToolBar" name="mainToolBar">
@@ -537,6 +530,44 @@ border: none;</string>
     <bool>false</bool>
    </attribute>
   </widget>
+  <action name="actionTools">
+   <property name="text">
+    <string>Tools</string>
+   </property>
+  </action>
+  <action name="actionADC_Command">
+   <property name="text">
+    <string>ADC Command</string>
+   </property>
+  </action>
+  <action name="actionCurrent_Calibration">
+   <property name="text">
+    <string>Current Calibration</string>
+   </property>
+  </action>
+  <action name="actionCommand_SMA">
+   <property name="text">
+    <string>Command SMA</string>
+   </property>
+  </action>
+  <action name="actionAll_SMA">
+   <property name="text">
+    <string>All SMA</string>
+   </property>
+  </action>
+  <action name="actionQuit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Esc</string>
+   </property>
+  </action>
+  <action name="actionSinus">
+   <property name="text">
+    <string>Sinus</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
@@ -548,8 +579,6 @@ border: none;</string>
   <tabstop>Getdisparity</tabstop>
   <tabstop>Disparity_loop</tabstop>
   <tabstop>CheckAll</tabstop>
-  <tabstop>CheckCurrent</tabstop>
-  <tabstop>CheckADC</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -566,6 +595,22 @@ border: none;</string>
     <hint type="destinationlabel">
      <x>399</x>
      <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionQuit</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>402</x>
+     <y>359</y>
     </hint>
    </hints>
   </connection>

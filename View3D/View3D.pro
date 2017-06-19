@@ -48,4 +48,4 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-#QMAKE_CFLAGS +=-Ofast -mfpu=vfp -mfloat-abi=hard -march=armv6zk -mtune=arm1176jzf-s
+QMAKE_CFLAGS +=-DTBB_USE_GCC_BUILTINS=1 -D__TBB_64BIT_ATOMICS=0

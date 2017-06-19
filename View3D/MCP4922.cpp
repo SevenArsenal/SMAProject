@@ -9,7 +9,6 @@ MCP4922::MCP4922()
 }
 MCP4922::~MCP4922()
 {
-
     printf("KILL DAC");
 
     DAC_set(DAC_CHANNEL_A,0);

@@ -30,12 +30,11 @@
 
 #define DISPARITY_MAX 1200
 
-#define IS_IMSHOW_ENABLE false
+#define IS_IMSHOW_ENABLE true
 #define IS_IMWRITE_ENABLE false
-#define IS_VIDEOWRITE_ENABLE 1
+#define IS_VIDEOWRITE_ENABLE false
 
 #define FPS_VIDEO 3
-
 
 
 typedef enum  {

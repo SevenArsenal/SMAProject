@@ -74,6 +74,10 @@ Camera::Camera(QObject *parent) :
     Camera_run_mutex.lock();
     Camera_run = CAMERA_STOP;
     Camera_run_mutex.unlock();
+
+
+    ndisparities = 16*3;   /**< Range of disparity */
+    SADWindowSize = 51; /**< Size of the block window. Must be odd */
 }
 
 int Camera::InitCamera()
@@ -106,6 +110,9 @@ int Camera::InitCamera()
         {
             emit SendText("Camera right don't start",QColor(255,150,0));
         }
+
+        CamLeft.release();
+        CamRight.release();
         return -1;
     }
     double dWidthR = CamRight.get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
@@ -126,8 +133,10 @@ int Camera::InitCamera()
     qDebug() <<" - FPS : " << fpsL;
     //qDebug() <<" - Buffersize : " << BUFL << endl;
 
-
     isCameraInit = true;
+
+    CamSize.height  = dHeightR;
+    CamSize.width   = dWidthR;
 
     qDebug() << "InitCamera End";
     return 0;
@@ -247,8 +256,14 @@ int Camera::getDisparity()
     if(1){
         if(IS_IMSHOW_ENABLE)cv::imshow("Left", imgLeft);
         if(IS_IMSHOW_ENABLE)cv::imshow("Right", imgRight);
-        if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/Left-"__DATE__" "__TIME__".jpg", imgLeft);
-        if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/Right-"__DATE__" "__TIME__".jpg", imgRight);
+        if(IS_IMWRITE_ENABLE){
+            QString Filename = "Images/Left-"+QDateTime::currentDateTime().toString()+".jpg";
+            cv::imwrite(Filename.toStdString(), imgLeft);
+        }
+        if(IS_IMWRITE_ENABLE){
+            QString Filename = "Images/Right-"+QDateTime::currentDateTime().toString()+".jpg";
+            cv::imwrite(Filename.toStdString(), imgRight);
+        }
     }
 
     //-- And create the image in which we will save our disparities
@@ -262,14 +277,14 @@ int Camera::getDisparity()
     }
 
     //-- 2. Call the constructor for StereoBM
-    //int ndisparities = 16*5;   /**< Range of disparity */
-    //int SADWindowSize = 21; /**< Size of the block window. Must be odd */
-    //int ndisparities = 16*5;   /**< Range of disparity */
-    //int SADWindowSize = 41; /**< Size of the block window. Must be odd */
-    //int ndisparities = 16*5;   /**< Range of disparity */
-    //int SADWindowSize = 61; /**< Size of the block window. Must be odd */
-    int ndisparities = 16*3;   /**< Range of disparity */
-    int SADWindowSize = 51; /**< Size of the block window. Must be odd */
+    //ndisparities = 16*5;   /**< Range of disparity */
+    //SADWindowSize = 21; /**< Size of the block window. Must be odd */
+    //ndisparities = 16*5;   /**< Range of disparity */
+    //SADWindowSize = 41; /**< Size of the block window. Must be odd */
+    //ndisparities = 16*5;   /**< Range of disparity */
+    //SADWindowSize = 61; /**< Size of the block window. Must be odd */
+    ndisparities = 16*3;   /**< Range of disparity */
+    SADWindowSize = 51; /**< Size of the block window. Must be odd */
 
     Ptr<StereoBM> sbm = StereoBM::create( ndisparities, SADWindowSize );
     //-- 3. Calculate the disparity image
@@ -328,7 +343,11 @@ int Camera::getDisparity()
                  );
         cv::imshow( "CropImage", imgDisparity8U );
     }
-    if(IS_IMWRITE_ENABLE)cv::imwrite("/home/pi/Desktop/CropImage-"__DATE__" "__TIME__".jpg", imgDisparity8U);
+    if(IS_IMWRITE_ENABLE){
+
+        QString Filename = "Images/CropImage-"+QDateTime::currentDateTime().toString()+".jpg";
+        cv::imwrite(Filename.toStdString(), imgDisparity8U);
+    }
     if(IS_VIDEOWRITE_ENABLE)SaveDisparity.write(imgDisparity8U);
 
     //-- 5. Find 4 Max
@@ -376,9 +395,15 @@ int Camera::getDisparity(bool loop)
         StopRUN();
 
         if(IS_VIDEOWRITE_ENABLE){
-            Size S = Size(640,480);// Magic number ^^
+            int PosX = ndisparities-1 + (SADWindowSize-1)/2;
+            int PosY = (SADWindowSize-1)/2;
+            int W = CamSize.width  - (SADWindowSize-1)/2 - PosX;
+            int H = CamSize.height - (SADWindowSize-1)/2 - PosY;
+            Size S = Size(W,H);// Magic number ^^
 
-            SaveDisparity.open("/home/pi/Desktop/CropImage-"__DATE__" "__TIME__".avi",CV_FOURCC('W','M','V','1'),FPS_VIDEO,S,false);//CV_FOURCC('M','J','P','G') CV_FOURCC('P','I','M','1')
+            QString Filename = "Video/CropImage-"+QDateTime::currentDateTime().toString()+".avi";
+
+            SaveDisparity.open(Filename.toStdString(),CV_FOURCC('W','M','V','1'),FPS_VIDEO,S,false);//CV_FOURCC('M','J','P','G') CV_FOURCC('P','I','M','1')
 
             if(!SaveDisparity.isOpened())
             {
